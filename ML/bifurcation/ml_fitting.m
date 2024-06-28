@@ -22,19 +22,21 @@ figure('Position', [100, 100, 1000, 400])
 FS = 'fontsize'; FW = 'fontweight'; NO = 'normal'; LW = 'linewidth';
 subplot(2,1,1)
 plot(g1c(1:800),'kx','DisplayName','LARS'); hold on 
-% plot(para(1:800,:)*coeff,'r-o','DisplayName','Regression training');
-plot(predict(model1,para(1:800,:)),'ro','DisplayName','Regression training');
-xlabel('number', FS,14)
-ylabel('$G_{1c}$','interpreter','latex', FS,14)
+% plot(para(1:800,:)*coeff,'r-o','DisplayName','Neural network training');
+plot(predict(model1,para(1:800,:)),'ro','DisplayName','Neural network training');
+xlabel('Number', FS,14)
+ylabel('$G_1$','interpreter','latex', FS,14)
+title('Model training', FS,14)
 legend
 set(gca,'PlotBoxAspectRatio',[7 1 1])
 ylim([0 .06])
 subplot(2,1,2)
 plot(g1c(801:1000),'kx','DisplayName','LARS'); hold on 
-% plot(para(801:1000,:)*coeff,'b-o','DisplayName','Regression prediction');
-plot(predict(model1,para(801:1000,:)),'bo','DisplayName','Regression prediction');
-xlabel('number', FS,14)
-ylabel('$G_{1c}$','interpreter','latex', FS,14)
+% plot(para(801:1000,:)*coeff,'b-o','DisplayName','Neural network prediction');
+plot(predict(model1,para(801:1000,:)),'bo','DisplayName','Neural network prediction');
+xlabel('Number', FS,14)
+ylabel('$G_1$','interpreter','latex', FS,14)
+title('Model validation', FS,14)
 legend
 set(gca,'PlotBoxAspectRatio',[7 1 1])
 ylim([0 .06])

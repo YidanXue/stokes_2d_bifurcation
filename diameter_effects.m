@@ -1,62 +1,64 @@
-% lightning Stokes solver for microvascular bifurcation, adapted from the solver for cavity flow
-% published by Brubeck and Trefethen, SIAM J. SCI. COMPUT., 2022
+% MATLAB code to reproduce Fig. 3
+% Yidan Xue, Jul 2023, last update Mar 2024
 
-%% Create an array with 1000 rows
-warning off
-para = []; num = 1000;
-g0c = []; g1c = []; g2c = [];
-L = 2;
-while size(para,1)<num
-    if mod(size(para,1),100) == 0
-        size(para,1)/num
-    end
-    % generate random parameters
-    D1 = 0.5*rand+0.5;
-    D2 = 0.5*rand+0.5;
-    alpha = pi/4;
-    beta = pi/4;
-
-    % parameters
-    P0 = 0;
-    Dp = 1;
-
-    sina = sin(alpha);
-    cosa = cos(alpha);
-    tana = tan(alpha);
-    sinb = sin(beta);
-    cosb = cos(beta);
-    tanb = tan(beta);
-    
-    % setup - geometry
-    wc1 = -L;
-    wc2 = L*cosb-1i*L*sinb;
-    wc3 = L*cosa+1i*L*sina;
-    w1 = (Dp/2-D1/(2*cosa))/tana+Dp/2*1i;
-    w2 = wc1+Dp/2*1i;
-    w3 = wc1-Dp/2*1i;
-    w4 = (Dp/2-D2/(2*cosb))/tanb-Dp/2*1i;
-    w5 = wc2-D2/2*sinb-1i*D2/2*cosb;
-    w6 = wc2+D2/2*sinb+1i*D2/2*cosb;
-    w7x = (D1/cosa+D2/cosb)/(2*(tana+tanb));
-    w7y = w7x*tana-D1/(2*cosa);
-    w7 = w7x+1i*w7y;
-    w8 = wc3+D1/2*sina-1i*D1/2*cosa;
-    w9 = wc3-D1/2*sina+1i*D1/2*cosa;
-    if alpha == 0
-        w1 = Dp/2*1i;
-    end
-    if beta == 0
-        w4 = -Dp/2*1i;
-    end
-    if alpha == pi/2
-        w7x = D1/2;
-        w7y = -w7x*tanb+D2/(2*cosb);
+% parameters
+d1 = linspace(0.5,1,51);
+d2 = linspace(0.5,1,51);
+g0c_err = zeros(length(d2),length(d1));
+g1c_err = zeros(length(d2),length(d1));
+g2c_err = zeros(length(d2),length(d1));
+for ii=1:length(d1)
+    ii/length(d1)
+    for jj=1:length(d2)
+        % diameters
+        Dp = 1;
+        
+        % angles
+        alpha = pi/4;
+        beta = pi/4;
+        sina = sin(alpha);
+        cosa = cos(alpha);
+        tana = tan(alpha);
+        sinb = sin(beta);
+        cosb = cos(beta);
+        tanb = tan(beta);
+        
+        % inlet length
+        l = 2;
+        
+        % variables
+        D1 = d1(ii);
+        D2 = d2(jj);
+        P0 = 0;
+        
+        % setup - geometry
+        wc1 = -l;
+        wc2 = l*cosb-1i*l*sinb;
+        wc3 = l*cosa+1i*l*sina;
+        w1 = (Dp/2-D1/(2*cosa))/tana+Dp/2*1i;
+        w2 = wc1+Dp/2*1i;
+        w3 = wc1-Dp/2*1i;
+        w4 = (Dp/2-D2/(2*cosb))/tanb-Dp/2*1i;
+        w5 = wc2-D2/2*sinb-1i*D2/2*cosb;
+        w6 = wc2+D2/2*sinb+1i*D2/2*cosb;
+        w7x = (D1/cosa+D2/cosb)/(2*(tana+tanb));
+        w7y = w7x*tana-D1/(2*cosa);
         w7 = w7x+1i*w7y;
-    end
-    % check the geometry is a bifurcation
-    if abs(Alpha+Beta)>=pi/2 && imag(w5)<=imag(w4) && imag(w9)>=imag(w1) && real(w7)<=real(w6) && real(w7)<=real(w8)
-        para = [para; D1 D2 alpha beta];
-    
+        w8 = wc3+D1/2*sina-1i*D1/2*cosa;
+        w9 = wc3-D1/2*sina+1i*D1/2*cosa;
+        if alpha == 0
+            w1 = Dp/2*1i;
+        end
+        if beta == 0
+            w4 = -Dp/2*1i;
+        end
+        if alpha == pi/2
+            w7x = D1/2;
+            w7y = -w7x*tanb+D2/(2*cosb);
+            w7 = w7x+1i*w7y;
+        end
+        
+        
         w = [w1; w2; w3; w4; w5; w6; w7; w8; w9];   % corners
         m = 300; s = tanh(linspace(-14,14,m));   % clustered pts in (-1,1)
         Z = [(w1+w2)/2+(w2-w1)/2*s (w2+w3)/2+(w3-w2)/2*s (w3+w4)/2+(w4-w3)/2*s...
@@ -96,7 +98,7 @@ while size(para,1)<num
                 sigma(i) = 2;
             end
         end
-        dk1 = L*cluster(np,sigma(1)); dk2 = L*cluster(np,sigma(2)); dk3 = L*cluster(np,sigma(3));
+        dk1 = l*cluster(np,sigma(1)); dk2 = l*cluster(np,sigma(2)); dk3 = l*cluster(np,sigma(3));
         Pol = {w(1)+exp(1i*t1)*dk1,w(4)+exp(1i*t4)*dk2,w(7)+exp(1i*t7)*dk3};   % the poles
         
         Hes = VAorthog(Z,n,Pol);   % Arnoldi Hessenberg matrices
@@ -138,16 +140,8 @@ while size(para,1)<num
         A = [A1; A2]; rhs = [rhs1; rhs2];
         
         % solution and plot
-        % w = [w1;w4;w7];
         [A,rhs] = rowweighting(A,rhs,Z,w);
-        % [A,rhs] = normalize(A,rhs,0,1,Hes,Pol);
         c = A\rhs;
-        error = A*c-rhs;
-        maxerror = norm(error,inf);
-        if maxerror>=1e-6
-            print('Error! Parameters:')
-            para(end,:)
-        end
         
         [psi,uv,p,omega,f,g] = makefuns(c,Hes,Pol);
         % plotcontours(w,Z,psi,uv,Pol)
@@ -188,35 +182,87 @@ while size(para,1)<num
         A = [A1; A2]; rhs = [rhs1; rhs2];
         
         % solution and plot
-        % w = [w1;w4;w7];
         [A,rhs] = rowweighting(A,rhs,Z,w);
-        % [A,rhs] = normalize(A,rhs,0,1,Hes,Pol);
         c = A\rhs;
-        error = A*c-rhs;
-        maxerror = norm(error,inf);
-        if maxerror>=1e-6
-            print('Error! Parameters:')
-            para(end,:)
-        end
-
         [psi,uv,p,omega,f,g] = makefuns(c,Hes,Pol);
         Q12 = psi(w9)-psi(w8);
         Q22 = psi(w6)-psi(w5);
         
         [G0c,G1c,G2c] = flow_network(P11,P21,P12,P22,Q11,Q12,Q21,Q22);
-        g0c = [g0c;G0c];
-        g1c = [g1c;G1c];
-        g2c = [g2c;G2c];
+        G0ci = 1/(12*l); G1ci = D1^3/(12*l); G2ci = D2^3/(12*l);
+        g0c_err(jj,ii) = (G0c-G0ci)/G0ci;
+        g1c_err(jj,ii) = (G1c-G1ci)/G1ci;
+        g2c_err(jj,ii) = (G2c-G2ci)/G2ci;
     end
 end
-
 %%
-save('parameters.mat','para')
-save('g0c.mat','g0c')
-save('g1c.mat','g1c')
-save('g2c.mat','g2c')
+FS = 'fontsize'; FW = 'fontweight'; NO = 'normal'; LW = 'linewidth';
+tiledlayout(1,3,'Padding','tight','TileSpacing','tight');
+fs = 24;
 
-%% functions
+nexttile
+% subplot(1,3,1)
+pcolor(d1,d2,g0c_err), hold on, colormap(cool)
+shading interp, c=colorbar(), caxis([0 0.17])
+% [C,h]= contour(d1,d2,g0c_err,[0 0.005 0.01 0.015],'k',LW,.8);
+% clabel(C,h,FS,fs, 'labelspacing', 600)
+% murray's law
+xx = linspace(0.5,1,501);
+yy = (1-xx.^2).^(1/2);
+plot(xx,yy,'k',LW,2)
+plot([0.5 1],[0.5 1],'-.k',LW,2)
+text(0.68,0.9,'2D Murray''s law','HorizontalAlignment','center',FS,fs,'color','k')
+title('$(G_0-\tilde{G}_0)/\tilde{G}_0$','interpreter','latex',FS,fs)
+xlabel('$D_1$','interpreter','latex', FS,fs)
+ylabel('$D_2$','interpreter','latex', FS,fs)
+xticks([0.5 0.6 0.7 0.8 0.9 1])
+yticks([0.5 0.6 0.7 0.8 0.9 1])
+fontsize(gca,fs,'points')
+axis square
+
+nexttile
+% subplot(1,3,2)
+pcolor(d1,d2,g1c_err), hold on, colormap(cool)
+emax = max(max(g1c_err));
+shading interp, c=colorbar(), caxis([0 0.17])
+% [C,h]= contour(d1,d2,frd,[-0.015 -0.01 -0.005 0 0.005 0.01 0.015],'k',LW,.8);
+% clabel(C,h,FS,fs, 'labelspacing', 600)
+% murray's law
+xx = linspace(0.5,1,501);
+yy = (1-xx.^2).^(1/2);
+plot(xx,yy,'k',LW,2)
+plot([0.5 1],[0.5 1],'-.k',LW,2)
+text(0.68,0.9,'2D Murray''s law','HorizontalAlignment','center',FS,fs,'color','k')
+title('$(G_1-\tilde{G}_1)/\tilde{G}_1$','interpreter','latex',FS,fs)
+xlabel('$D_1$','interpreter','latex', FS,fs)
+ylabel('$D_2$','interpreter','latex', FS,fs)
+xticks([0.5 0.6 0.7 0.8 0.9 1])
+yticks([0.5 0.6 0.7 0.8 0.9 1])
+fontsize(gca,fs,'points')
+axis square
+
+nexttile
+% subplot(1,3,3)
+pcolor(d1,d2,g2c_err), hold on, colormap(cool)
+emax = max(max(g2c_err));
+shading interp, c=colorbar(), caxis([0 0.17])
+% [C,h]= contour(d1,d2,frd,[-0.015 -0.01 -0.005 0 0.005 0.01 0.015],'k',LW,.8);
+% clabel(C,h,FS,fs, 'labelspacing', 600)
+% murray's law
+xx = linspace(0.5,1,501);
+yy = (1-xx.^2).^(1/2);
+plot(xx,yy,'k',LW,2)
+plot([0.5 1],[0.5 1],'-.k',LW,2)
+text(0.68,0.9,'2D Murray''s law','HorizontalAlignment','center',FS,fs,'color','k')
+title('$(G_2-\tilde{G}_2)/\tilde{G}_2$','interpreter','latex',FS,fs)
+xlabel('$D_1$','interpreter','latex', FS,fs)
+ylabel('$D_2$','interpreter','latex', FS,fs)
+xticks([0.5 0.6 0.7 0.8 0.9 1])
+yticks([0.5 0.6 0.7 0.8 0.9 1])
+fontsize(gca,fs,'points')
+axis square
+set(gcf,'units','inches','position',[0,0,18,6])
+exportgraphics(gcf,'diameter_effects.pdf','Resolution',600)
 
 function [G0c,G1c,G2c] = flow_network(P11,P21,P12,P22,Q11,Q12,Q21,Q22)
     A = [-Q11 Q21; -Q12 Q22];
@@ -296,18 +342,6 @@ A1 = zeros(M,N); rhs1 = zeros(M,1);
 A2 = zeros(M,N); rhs2 = zeros(M,1);
 end
 
-function [A,rhs] = normalize(A,rhs,a,b,Hes,varargin)
-% Impose conditions at z=a and z=b to make f and g unique
-Pol = []; if nargin == 6, Pol = varargin{1}; end
-rhs = [rhs; 0; 0; 0; 0];
-z = a; r0 = VAeval(z,Hes,Pol); zero = 0*r0;
-A = [A; real([r0 zero]) -imag([r0 zero])];
-A = [A; imag([r0 zero])  real([r0 zero])];
-A = [A; real([zero r0]) -imag([zero r0])];
-z = b; r0 = VAeval(z,Hes,Pol);
-A = [A; real([r0 zero]) -imag([r0 zero])];
-end
-
 function [A,rhs] = rowweighting(A,rhs,Z,w)
 dZw = min(abs(Z-w.'),[],2);
 wt = [dZw; dZw];
@@ -335,29 +369,4 @@ switch i
    case   'p'  , fh = real(4*R1*cf);                        
    case 'omega', fh = imag(-4*R1*cf);                       
 end
-end
-
-function plotcontours(w,Z,psi,uv,varargin)   % contour plot
-     Pol = []; if nargin == 5, Pol = varargin{1}; end
-     MS = 'markersize'; LW = 'linewidth'; CO = 'color';
-     x1 = min(real(Z)); x2 = max(real(Z)); xm = mean([x1 x2]); dx = diff([x1 x2]);
-     y1 = min(imag(Z)); y2 = max(imag(Z)); ym = mean([y1 y2]); dy = diff([y1 y2]);
-     dmax = max(dx,dy); nx = ceil(300*dx/dmax); ny = ceil(300*dy/dmax);
-     x = linspace(x1,x2,nx); y = linspace(y1,y2,ny);
-     [xx,yy] = meshgrid(x,y); zz = xx + 1i*yy;
-     inpolygonc = @(z,w) inpolygon(real(z),imag(z),real(w),imag(w));
-     dZw = min(abs(Z-w.'),[],2);  % distance to nearest corner
-     ii = find(dZw>5e-3); outside = ~inpolygonc(zz,Z(ii));
-     uu = abs(uv(zz)); uu(outside) = NaN; umax = max(max(uu));
-     pcolor(x,y,uu), hold on, colormap(gca,parula)
-     shading interp, c=colorbar(), caxis([0 umax])
-     c.Label.FontSize = 12;  
-     c.Label.String = 'Velocity magnitude';
-     plot(Z([1:end 1]),'k',LW,.8)
-     pp = psi(zz); pp(outside) = NaN; pmin = min(min(pp)); pmax = max(max(pp));
-     lev = pmin+(.1:.1:.9)*(pmax-pmin);
-     contour(x,y,pp,lev,'k',LW,.6)
-     if nargin==5, plot(cell2mat(Pol),'.r',MS,8), end
-     hold off, axis([xm+.6*dx*[-1 1] ym+.6*dy*[-1 1]]), axis equal off
-%      exportgraphics(gcf,'bifurcation_example.pdf','Resolution',600)
 end
