@@ -31,4 +31,5 @@ The 'particle' folder:
 2) 'cylinder_location.m' investigates the particle location on flow conductance (Figure 9).
 
 The 'ML' folder:
+
 There are 3 subfolders, where 'bifurcation', 'smooth_boundary' and 'particle' reproduce Figures 10a, 10b and 10c, respectively. In each folder, 'parameters.mat' stores the input parameters for both training and validation. Running 'data_generation.m' will simulate the flow conductance for each input parameter set using the LARS algorithm, and output 'g0c.mat', 'g1c.mat' and 'g2c.mat'. Finally, executing 'ml_fitting.m' will train the 3 neural networks 'g0_ml.mat', 'g1_ml.mat' and 'g2_ml.mat' using the first 80\% of the simulation results, and compute the loss using the last 20\% of the simulation results.
